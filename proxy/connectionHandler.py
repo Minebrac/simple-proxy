@@ -1,4 +1,4 @@
-import select, selectors
+import select
 import threading
 import socket
 import io
