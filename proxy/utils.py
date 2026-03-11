@@ -1,4 +1,7 @@
 from io import BytesIO
+import re
+
+import config
 
 
 def read_varint(data: bytearray):
@@ -45,3 +48,14 @@ def read_varint_stream(data: BytesIO):
             raise ValueError("VarInt too big")
 
     return val
+
+def find_host(req: str):
+    s = str(config.CONF["route"]["backend"])
+
+    match = config.REG.match(req)
+
+    if not match: return s
+
+    for i, gr in enumerate(match.groups()):
+        s = s.replace(f"${i+1}", gr)
+    return s

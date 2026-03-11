@@ -7,6 +7,7 @@ import utils
 class ConnectionHandler(threading.Thread):
 
     def __init__(self, sock):
+
         super().__init__(daemon=True)
         self.incoming_sock = sock
 
@@ -19,7 +20,9 @@ class ConnectionHandler(threading.Thread):
             raise RuntimeError("unable to decode")
 
         proto = utils.read_varint_stream(packet)
-        address = packet.read(utils.read_varint_stream(packet)).decode('utf-8')
+        address = utils.find_host(
+            packet.read(utils.read_varint_stream(packet)).decode('utf-8')
+        )
         port = int.from_bytes(packet.read(2))
 
         print(f"{self.name} : connecting {address}:{port}")
@@ -27,7 +30,7 @@ class ConnectionHandler(threading.Thread):
         self.outgoing_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.outgoing_sock.connect((
             socket.gethostbyname(address),
-            30066 # 25555 / 30066
+            port
         ))
         self.outgoing_sock.sendall(data)
 

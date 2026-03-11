@@ -1,10 +1,12 @@
 import socket
 import connectionHandler
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(('', 30625))
+import config
 
-s.listen() # was 5
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind(('', config.CONF["general"]["port"]))
+
+s.listen()
 print("socket is listening")
 
 while True:
