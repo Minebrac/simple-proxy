@@ -59,3 +59,6 @@ def find_host(req: str):
     for i, gr in enumerate(match.groups()):
         s = s.replace(f"${i+1}", gr)
     return s
+
+if __name__ == "__main__":
+    print(find_host("minigame-0.minebrac.internal.eg2hlb.fr"))

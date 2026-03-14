@@ -3,6 +3,7 @@ import threading
 import socket
 import io
 import utils
+from config import CONF
 
 class ConnectionHandler(threading.Thread):
 
@@ -23,7 +24,7 @@ class ConnectionHandler(threading.Thread):
         address = utils.find_host(
             packet.read(utils.read_varint_stream(packet)).decode('utf-8')
         )
-        port = int.from_bytes(packet.read(2))
+        port = CONF["route"]["backend-port"]
 
         print(f"{self.name} : connecting {address}:{port}")
 

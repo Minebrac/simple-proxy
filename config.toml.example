@@ -3,4 +3,5 @@ port = 30625
 
 [route]
 route="(.+)\\.domain\\.net"
-backend="$1.servers.svc:25565"
+backend="$1.servers.svc"
+backend-port=25565
