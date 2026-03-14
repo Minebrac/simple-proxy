@@ -5,4 +5,4 @@ COPY ./proxy .
 
 EXPOSE 30625
 
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["python", "-u", "main.py"]

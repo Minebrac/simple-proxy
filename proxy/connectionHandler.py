@@ -21,8 +21,10 @@ class ConnectionHandler(threading.Thread):
             raise RuntimeError("unable to decode")
 
         proto = utils.read_varint_stream(packet)
+        requested = packet.read(utils.read_varint_stream(packet)).decode('utf-8')
+        print(f"{self.name} : Client requested {requested}")
         address = utils.find_host(
-            packet.read(utils.read_varint_stream(packet)).decode('utf-8')
+            requested
         )
         port = CONF["route"]["backend-port"]
 
