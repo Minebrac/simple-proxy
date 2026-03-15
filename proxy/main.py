@@ -12,9 +12,12 @@ print("socket is listening")
 while True:
     connection, _ = s.accept()
 
-    handler = connectionHandler.ConnectionHandler(
-        connection,
-    )
+    try:
+        handler = connectionHandler.ConnectionHandler(
+            connection,
+        )
 
-    handler.start()
+        handler.start()
+    except Exception as e:
+        print(e)
 
