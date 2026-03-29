@@ -5,37 +5,59 @@ import io
 import utils
 from config import CONF
 
+
 class ConnectionHandler(threading.Thread):
 
-    def __init__(self, sock):
+    def __init__(self, sock: socket.socket):
 
         super().__init__(daemon=True)
         self.incoming_sock = sock
 
-        data = bytearray(sock.recv(20480))
-        packet_size, off = utils.read_varint(data)
+        full_buffer = b''
+        state = 0
 
-        packet = io.BytesIO(data[off:packet_size + 1])
-        packet_id = utils.read_varint_stream(packet)
-        if packet_id != 0:
-            raise RuntimeError("unable to decode")
+        packet_buffer = bytearray(self.incoming_sock.recv(1024))
 
-        proto = utils.read_varint_stream(packet)
-        requested = packet.read(utils.read_varint_stream(packet)).decode('utf-8')
-        print(f"{self.name} : Client requested {requested}")
-        address = utils.find_host(
-            requested
-        )
-        port = CONF["route"]["backend-port"]
+        while True:
+            packet_size, off = utils.read_varint(packet_buffer)
+            while len(packet_buffer) < packet_size + off:
+                packet_buffer += bytearray(self.incoming_sock.recv(1024))
 
-        print(f"{self.name} : connecting {address}:{port}")
+            if state == 0:
+                # handshaking
+                handshake_packet = packet_buffer[:packet_size+off]
+                next_packet = packet_buffer[packet_size+off:]
 
-        self.outgoing_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.outgoing_sock.connect((
-            socket.gethostbyname(address),
-            port
-        ))
-        self.outgoing_sock.sendall(data)
+                full_buffer += handshake_packet
+                # we may receive only the handshake packet
+                if next_packet == b'':
+                    packet_buffer = bytearray(self.incoming_sock.recv(1024))
+                else:
+                    packet_buffer = next_packet
+
+                state = 1
+            else:
+                full_buffer += packet_buffer
+                # decoding the packet
+                packet = io.BytesIO(packet_buffer)
+                packet_size = utils.read_varint_stream(packet)
+                packet_id = utils.read_varint_stream(packet)
+
+                player_name = packet.read(utils.read_varint_stream(packet)).decode("utf-8")
+
+                address = utils.find_host(player_name)
+                port = CONF["general"]["backend-port"]
+
+                print(f"{self.name} : We are going to connect {player_name} to {address}:{port}, which is {socket.gethostbyname(address)}")
+
+                self.outgoing_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.outgoing_sock.connect((
+                    socket.gethostbyname(address),
+                    port
+                ))
+                self.outgoing_sock.sendall(full_buffer)
+                break
+
 
 
     def run(self):

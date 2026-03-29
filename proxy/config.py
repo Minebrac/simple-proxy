@@ -2,13 +2,11 @@ import tomllib
 import re
 
 CONF = None
-REG = None
 
 try:
     CONF = tomllib.load(
         open("config.toml", "rb")
     )
-    REG = re.compile(CONF["route"]["route"])
 except tomllib.TOMLDecodeError as error:
     print("Failed to decode config !")
     print(error.msg)

@@ -1,7 +1,9 @@
 from io import BytesIO
-import re
+import redis
 
-import config
+from config import CONF
+
+r = redis.Redis(host=CONF["redis"]["host"], port=CONF["redis"]["port"], db=0, decode_responses=True)
 
 
 def read_varint(data: bytearray):
@@ -49,16 +51,8 @@ def read_varint_stream(data: BytesIO):
 
     return val
 
-def find_host(req: str):
-    s = str(config.CONF["route"]["backend"])
-
-    match = config.REG.match(req)
-
-    if not match: return s
-
-    for i, gr in enumerate(match.groups()):
-        s = s.replace(f"${i+1}", gr)
-    return s
+def find_host(player_name: str):
+    return r.get(player_name)
 
 if __name__ == "__main__":
-    print(find_host("minigame-0.minebrac.internal.eg2hlb.fr"))
+    print(find_host("test"))

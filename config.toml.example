@@ -1,7 +1,7 @@
 [general]
-port = 30625
-
-[route]
-route="(.+)\\.domain\\.net"
-backend="$1.servers.svc"
+proxy-port=30625
 backend-port=25565
+
+[redis]
+host="localhost"
+port=6379
