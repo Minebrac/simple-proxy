@@ -2,6 +2,7 @@ import socket
 import connectionHandler
 
 import config
+import traceback
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind(('', config.CONF["general"]["proxy-port"]))
@@ -18,6 +19,6 @@ while True:
         )
 
         handler.start()
-    except Exception as e:
-        print(e)
+    except Exception:
+        traceback.print_exc()
 
