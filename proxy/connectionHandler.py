@@ -2,9 +2,9 @@ import select
 import threading
 import socket
 import io
+import logging
 import utils
 from config import CONF
-
 
 class ConnectionHandler(threading.Thread):
 
@@ -12,7 +12,13 @@ class ConnectionHandler(threading.Thread):
 
         super().__init__(daemon=True)
         self.incoming_sock = sock
+        self.logger = logging.getLogger(self.name)
+        self.outgoing_sock = None
 
+
+
+    def create_outgoing_sock(self):
+        """This function reads what is sent inside the incoming_sock to find player name. It then sends what it read in the newly created outgoing_sock"""
         full_buffer = b''
         state = 0
 
@@ -25,6 +31,9 @@ class ConnectionHandler(threading.Thread):
 
             if state == 0:
                 # handshaking
+
+                # /!\ We are getting errors if the remote is trying to get status (handshake with intent=1)
+                # see https://minecraft.wiki/w/Java_Edition_protocol/Packets#Handshake
                 handshake_packet = packet_buffer[:packet_size+off]
                 next_packet = packet_buffer[packet_size+off:]
 
@@ -48,7 +57,7 @@ class ConnectionHandler(threading.Thread):
                 address = utils.find_host(player_name)
                 port = CONF["general"]["backend-port"]
 
-                print(f"{self.name} : We are going to connect {player_name} to {address}:{port}, which is {socket.gethostbyname(address)}")
+                self.logger.info(f"{self.name} : We are going to connect {player_name} to {address}:{port}, which is {socket.gethostbyname(address)}")
 
                 self.outgoing_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.outgoing_sock.connect((
@@ -58,14 +67,20 @@ class ConnectionHandler(threading.Thread):
                 self.outgoing_sock.sendall(full_buffer)
                 break
 
+    def end_connection(self):
+        self.incoming_sock.close()
+        self.outgoing_sock.close()
+        self.logger.info("End of connection")
+
 
 
     def run(self):
+        self.create_outgoing_sock()
         # this code is a part of PyProxy by rsc-dev
         # https://github.com/rsc-dev/pyproxy
 
         try:
-            print(f"{self.name} : Running")
+            self.logger.info("Running")
 
             sockets = [self.incoming_sock, self.outgoing_sock]
             while True:
@@ -74,12 +89,16 @@ class ConnectionHandler(threading.Thread):
                 for s in s_read:
                     data = s.recv(10240)
 
+                    if not data:
+                        self.logger.error("Received empty data, closing connection")
+                        self.end_connection()
+                        return
+
+
                     if s == self.incoming_sock:
                         self.outgoing_sock.sendall(data)
                     elif s == self.outgoing_sock:
                         self.incoming_sock.sendall(data)
 
         except BrokenPipeError:
-            self.incoming_sock.close()
-            self.outgoing_sock.close()
-            print(f"{self.name} : End of connection")
+            self.end_connection()

@@ -2,13 +2,16 @@ import socket
 import connectionHandler
 
 import config
-import traceback
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind(('', config.CONF["general"]["proxy-port"]))
 
 s.listen()
-print("socket is listening")
+logger.info("socket is listening")
 
 while True:
     connection, _ = s.accept()
@@ -19,6 +22,6 @@ while True:
         )
 
         handler.start()
-    except Exception:
-        traceback.print_exc()
+    except Exception as e:
+        logger.exception("Error in ConnectionHandler !")
 
